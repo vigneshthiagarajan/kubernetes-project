@@ -1,4 +1,4 @@
-.PHONY: run_website stop_website
+.PHONY: run_website stop_website install_kind
 
 run_website:
 	docker build -t explorecalifornia . && \
@@ -6,3 +6,7 @@ run_website:
 
 stop_website:
 	docker stop explorecalifornia
+
+install_kind:
+	curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64 && \
+	./kind --version
