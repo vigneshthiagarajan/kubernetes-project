@@ -1,4 +1,5 @@
-.PHONY: run_website stop_website install_kind create_kind_cluster create_docker_registry
+.PHONY: run_website stop_website install_kind create_kind_cluster create_docker_registry connect_registry_to_kind_network connect_registry_to_kind create_kind_cluster_with_registry \ 
+		delete_kind_cluster delete_docker_registry
 
 run_website:
 	docker build -t explorecalifornia . && \
@@ -12,7 +13,7 @@ install_kind:
 	./kind --version
 
 create_kind_cluster: install_kind create_docker_registry
-	kind create cluster --name explorecalifornia && \
+	./kind create cluster --name explorecalifornia --config ./kind_config.yaml || true && \
 	kubectl get nodes
 
 create_docker_registry:
@@ -20,3 +21,21 @@ create_docker_registry:
 	then echo "local-registry already created. Skipping..."; \
 	else docker run --name local-registry -d --restart=always -p 5000:5000 registry:2 ; \
 	fi
+
+connect_registry_to_kind_network:
+	docker network connect kind local-registry || true
+
+connect_registry_to_kind: create_docker_registry connect_registry_to_kind_network
+	kubectl apply -f ./kind_configmap.yaml
+
+create_kind_cluster_with_registry:
+	$(MAKE) create_kind_cluster && $(MAKE) connect_registry_to_kind
+
+delete_kind_cluster: delete_docker_registry
+	./kind delete cluster --name exporecalifornia
+
+delete_docker_registry:
+	docker stop local-registry && docker rm local-registry || true
+
+check_kubesystem_namespace_running_pods:
+	kubectl get pods --namespace kube-system
